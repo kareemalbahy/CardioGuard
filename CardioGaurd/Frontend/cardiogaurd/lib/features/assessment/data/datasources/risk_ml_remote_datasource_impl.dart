@@ -10,8 +10,8 @@ class RiskMlRemoteDataSourceImpl implements RiskMlRemoteDataSource {
   // - Use the local IP of your host PC (e.g., 192.168.1.7) for Physical Devices (PC and device must share the same Wi-Fi).
   //   (This IP is displayed in the backend terminal when Flask runs, or can be retrieved via `ipconfig` / `ifconfig`).
   // - Use 10.0.2.2 for Android Emulators (maps to host's 127.0.0.1/localhost).
-  final String endpoint = 'http://192.168.1.7:5000/predict';
-  //final String endpoint = 'http://10.0.2.2:5000/predict';
+  //final String endpoint = 'http://192.168.1.7:5000/predict';
+  final String endpoint = 'http://10.0.2.2:5000/predict';
 
   @override
   Future<double> predictRiskScore(AssessmentInputEntity input) async {
@@ -21,7 +21,7 @@ class RiskMlRemoteDataSourceImpl implements RiskMlRemoteDataSource {
         Uri.parse(endpoint),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(inputModel.toJson()),
-      ).timeout(const Duration(seconds: 10));
+      ).timeout(const Duration(seconds: 60)); // Render free tier cold start can take up to 50 seconds
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
