@@ -27,8 +27,25 @@ import 'package:cardiogaurd/features/patient/presentation/screens/profile_screen
 import 'package:cardiogaurd/features/auth/presentation/screens/role_selection_screen.dart';
 
 class AppRouter {
+  static const _publicRoutes = {'/role-selection', '/login', '/register'};
+
   static final GoRouter router = GoRouter(
     initialLocation: '/role-selection',
+    redirect: (context, state) {
+      final authState = sl<AuthCubit>().state;
+      final isAuthenticated = authState.status == AuthStatus.authenticated;
+      final isPublic = _publicRoutes.contains(state.matchedLocation);
+
+      if (isAuthenticated && isPublic) {
+        return homeForRole(authState.user!.role);
+      }
+
+      if (!isAuthenticated && !isPublic) {
+        return '/role-selection';
+      }
+
+      return null;
+    },
     routes: [
       GoRoute(
         path: '/role-selection',
@@ -115,7 +132,7 @@ class AppRouter {
           final receiverName = extras?['receiverName'] as String? ?? 'Support';
           final receiverImageUrl = extras?['receiverImageUrl'] as String? ?? '';
           final currentUserId = context.read<AuthCubit>().state.user?.id ?? '';
-          
+
           return BlocProvider(
             create: (_) => sl<ChatCubit>(),
             child: ChatScreen(

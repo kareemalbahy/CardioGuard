@@ -55,11 +55,12 @@ def load_model_and_scaler():
         return True
 
     except Exception as e:
-        print(f"Error loading model/scaler: {str(e)}")
-        return False
-
-# Initialize model and scaler immediately on import/startup
-load_model_and_scaler()
+        #print(f" Error loading model/scaler: {str(e)}")
+        print(e)  # ADD THIS
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 400
 
 @app.route('/', methods=['GET'])
 def home():
@@ -188,7 +189,23 @@ def internal_error(e):
     return jsonify({'error': 'Internal server error','message': str(e)}), 500
 
 if __name__ == '__main__':
-    # Run server locally (Render uses gunicorn to start it instead)
-    port = int(os.environ.get('PORT', 5000))
-    print(f"Starting Flask API Server on port {port}")
-    app.run(debug=False, host='0.0.0.0', port=port)
+    # Load model and scaler
+    if load_model_and_scaler():
+
+        print(" Starting Flask API Server")
+
+        print("Server: http://127.0.0.1:5000")
+        print("Health check: http://127.0.0.1:5000/")
+        print("Features: http://127.0.0.1:5000/features")
+        print("Predict: http://127.0.0.1:5000/predict (POST)")
+
+        print("  For production, use Gunicorn or uWSGI")
+
+
+        # Run server
+        app.run(debug=False, host='0.0.0.0', port=5000)
+    else:
+        print("\n Failed to start server - model/scaler not loaded")
+        print("   Make sure these files exist:")
+        print("   xgboost_heart_disease_model.pkl")
+        print("   scaler.pkl")

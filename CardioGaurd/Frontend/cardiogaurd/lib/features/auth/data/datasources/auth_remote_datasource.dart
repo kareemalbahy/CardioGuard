@@ -29,4 +29,5 @@ abstract class AuthRemoteDataSource {
     String? hospital,
   });
   Future<void> sendPasswordResetEmail(String email);
+  Future<AppUser?> getCurrentUser();
 }

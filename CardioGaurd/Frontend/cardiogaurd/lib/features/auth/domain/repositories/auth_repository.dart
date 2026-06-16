@@ -35,4 +35,5 @@ abstract class AuthRepository {
     String? hospital,
   });
   Future<Either<Failure, Unit>> sendPasswordResetEmail(String email);
+  Future<Either<Failure, AppUser?>> getCurrentUser();
 }

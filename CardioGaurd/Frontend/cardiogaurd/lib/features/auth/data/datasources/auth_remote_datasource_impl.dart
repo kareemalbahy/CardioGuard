@@ -187,4 +187,38 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   Future<void> signOut() async {
     await _auth.signOut();
   }
+
+  @override
+  Future<AppUser?> getCurrentUser() async {
+    try {
+      final firebaseUser = _auth.currentUser;
+      if (firebaseUser == null) return null;
+
+      final userDoc = await _firestore.collection('users').doc(firebaseUser.uid).get();
+      if (!userDoc.exists) return null;
+
+      final data = userDoc.data()!;
+      final roleStr = data['role'] as String;
+      final role = UserRole.values.firstWhere(
+        (e) => e.name == roleStr,
+        orElse: () => UserRole.patient,
+      );
+
+      return AppUser(
+        id: firebaseUser.uid,
+        email: firebaseUser.email ?? '',
+        displayName: data['name'] ?? firebaseUser.email?.split('@').first ?? '',
+        role: role,
+        profileImageUrl: data['profileImageUrl'] ?? '',
+        specialty: data['specialty'],
+        hospital: data['hospital'],
+        phone: data['phone'],
+        gender: data['sex'],
+        dob: data['dob'],
+      );
+    } catch (e) {
+      print("GET CURRENT USER ERROR: $e");
+      return null;
+    }
+  }
 }

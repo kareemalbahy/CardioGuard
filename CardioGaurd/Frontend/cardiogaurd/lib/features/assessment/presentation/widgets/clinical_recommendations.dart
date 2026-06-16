@@ -10,7 +10,6 @@ class BuildClinicalRecommendation extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Split by newline and filter out empty lines or pure bullet points
     final recommendationLines = items
         .split('\n')
         .where((line) => line.trim().isNotEmpty)

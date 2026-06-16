@@ -51,7 +51,10 @@ class ProfileViewScreen extends StatelessWidget {
   }
 
   Widget _buildProfileHeader(String profilePic, String name, String email) {
-    final image = CardioImageUtils.getImageProvider(profilePic, fallback: 'images/patient_placeholder.png');
+    final image = CardioImageUtils.getCacheBustedImageProvider(
+      profilePic,
+      fallback: 'images/patient_placeholder.png',
+    );
 
     return Column(
       children: [

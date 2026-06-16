@@ -18,9 +18,9 @@ class AuthState extends Equatable {
         user = null,
         message = null;
 
-  const AuthState.loading()
+  const AuthState.loading({AppUser? currentUser})
       : status = AuthStatus.loading,
-        user = null,
+        user = currentUser,
         message = null;
 
   const AuthState.authenticated(AppUser u)
@@ -28,9 +28,9 @@ class AuthState extends Equatable {
         user = u,
         message = null;
 
-  const AuthState.failure(String m)
+  const AuthState.failure(String m, {AppUser? currentUser})
       : status = AuthStatus.failure,
-        user = null,
+        user = currentUser,
         message = m;
 
   @override

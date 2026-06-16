@@ -23,6 +23,20 @@ class AuthCubit extends Cubit<AuthState> {
     required this.authRepository,
   }) : super(const AuthState.initial());
 
+  Future<void> checkAuthStatus() async {
+    final result = await authRepository.getCurrentUser();
+    result.fold(
+      (_) => emit(const AuthState.initial()),
+      (user) {
+        if (user != null) {
+          emit(AuthState.authenticated(user));
+        } else {
+          emit(const AuthState.initial());
+        }
+      },
+    );
+  }
+
   Future<void> signOut() async {
     await authRepository.signOut();
     emit(const AuthState.initial());
@@ -88,7 +102,7 @@ class AuthCubit extends Cubit<AuthState> {
     final currentUser = state.user;
     if (currentUser == null) return;
 
-    emit(const AuthState.loading());
+    emit(AuthState.loading(currentUser: currentUser));
     final result = await authRepository.updateProfile(
       uid: currentUser.id,
       name: name,
@@ -101,7 +115,7 @@ class AuthCubit extends Cubit<AuthState> {
     );
 
     result.fold(
-      (f) => emit(AuthState.failure(f.message)),
+      (f) => emit(AuthState.failure(f.message, currentUser: currentUser)),
       (user) => emit(AuthState.authenticated(user)),
     );
   }

@@ -14,7 +14,6 @@ class AssessmentInputScreen extends StatefulWidget {
 }
 
 class _AssessmentInputScreenState extends State<AssessmentInputScreen> {
-  // Fetch patient profile data
   final userProfile = UserProfileEntity(
     name: fullName,
     email: email,
@@ -28,8 +27,11 @@ class _AssessmentInputScreenState extends State<AssessmentInputScreen> {
 
   // 13 Feature Variables initialized to standard clinical baselines (Age & Sex from Profile)
   late double _age = userProfile.age.toDouble();
-  late int _sex = userProfile.gender.toLowerCase() == 'male' ? 1 : 0; // 0: Female, 1: Male
-  int _cp = 0; // 0: Typical Angina, 1: Atypical Angina, 2: Non-anginal, 3: Asymptomatic
+  late int _sex = userProfile.gender.toLowerCase() == 'male'
+      ? 1
+      : 0; // 0: Female, 1: Male
+  int _cp =
+      0; // 0: Typical Angina, 1: Atypical Angina, 2: Non-anginal, 3: Asymptomatic
   double _trestbps = 120; // Resting Blood Pressure
   double _chol = 200; // Serum Cholesterol
   double _fbsValue = 100; // Fasting Blood Sugar numeric value
@@ -206,11 +208,7 @@ class _AssessmentInputScreenState extends State<AssessmentInputScreen> {
             BuildToggleCard(
               imgpath: 'images/thalassemia.png',
               title: 'Thalassemia',
-              options: const [
-                'Normal',
-                'Fixed Defect',
-                'Reversible Defect',
-              ],
+              options: const ['Normal', 'Fixed Defect', 'Reversible Defect'],
               selectedIndex: _thal - 1,
               onChanged: (val) => setState(() => _thal = val + 1),
             ),
