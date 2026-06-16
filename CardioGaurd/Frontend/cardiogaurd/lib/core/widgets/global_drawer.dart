@@ -10,7 +10,7 @@ class BuildDrawer extends StatelessWidget {
   final String profilePictureUrl;
   final String name;
   final String email;
-  
+
   const BuildDrawer({
     super.key,
     required this.profilePictureUrl,
@@ -22,23 +22,22 @@ class BuildDrawer extends StatelessWidget {
   Widget build(BuildContext context) {
     final user = context.read<AuthCubit>().state.user;
     final isDoctor = user?.role == UserRole.doctor;
-    
+
     final imageProvider = CardioImageUtils.getImageProvider(
       profilePictureUrl,
-      fallback: isDoctor ? 'images/doctor_placeholder.png' : 'images/patient_placeholder.png',
+      fallback: isDoctor
+          ? 'images/doctor_placeholder.png'
+          : 'images/patient_placeholder.png',
     );
 
     return Drawer(
       child: ListView(
         children: [
           UserAccountsDrawerHeader(
-            decoration: const BoxDecoration(
-              color: MyColors.primaryBlue,
-            ),
+            decoration: const BoxDecoration(color: MyColors.primaryBlue),
             currentAccountPicture: CircleAvatar(
               backgroundImage: imageProvider,
-              onBackgroundImageError: (error, stackTrace) {
-              },
+              onBackgroundImageError: (error, stackTrace) {},
             ),
             accountName: Text(
               name,
@@ -57,8 +56,8 @@ class BuildDrawer extends StatelessWidget {
           ListTile(
             leading: const Icon(Icons.logout, color: Colors.red),
             title: const Text("Logout", style: TextStyle(color: Colors.red)),
-            onTap: () {
-              context.read<AuthCubit>().signOut();
+            onTap: () async {
+              await context.read<AuthCubit>().signOut();
               context.go('/role-selection');
             },
           ),

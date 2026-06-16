@@ -13,7 +13,8 @@ class DoctorPatientsRepositoryImpl implements DoctorPatientsRepository {
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
   @override
-  Future<Either<Failure, List<DoctorPatientSummaryEntity>>> getAssignedPatients() async {
+  Future<Either<Failure, List<DoctorPatientSummaryEntity>>>
+  getAssignedPatients() async {
     try {
       final user = _auth.currentUser;
       if (user == null) return const Left(AuthFailure('Not logged in'));
@@ -23,7 +24,9 @@ class DoctorPatientsRepositoryImpl implements DoctorPatientsRepository {
           .where('doctorId', isEqualTo: user.uid)
           .get();
 
-      final patientIds = careTeamSnapshot.docs.map((doc) => doc.data()['patientId'] as String).toList();
+      final patientIds = careTeamSnapshot.docs
+          .map((doc) => doc.data()['patientId'] as String)
+          .toList();
       if (patientIds.isEmpty) return const Right([]);
 
       final List<DoctorPatientSummaryEntity> summaries = [];
@@ -39,17 +42,26 @@ class DoctorPatientsRepositoryImpl implements DoctorPatientsRepository {
             .get();
 
         final userData = userDoc.data()!;
-        final latestAssessment = assessmentSnapshot.docs.isNotEmpty ? assessmentSnapshot.docs.first.data() : null;
+        final latestAssessment = assessmentSnapshot.docs.isNotEmpty
+            ? assessmentSnapshot.docs.first.data()
+            : null;
 
-        summaries.add(DoctorPatientSummaryEntity(
-          id: pid,
-          name: userData['name'] ?? 'Unknown Patient',
-          lastRiskScore: latestAssessment != null ? (latestAssessment['riskScore'] as num).toDouble() : 0.0,
-          lastAssessmentDate: latestAssessment != null 
-              ? (latestAssessment['timestamp'] as Timestamp).toDate().toString().substring(0, 10) 
-              : 'No scans',
-          profilePictureUrl: userData['profileImageUrl'] ?? '',
-        ));
+        summaries.add(
+          DoctorPatientSummaryEntity(
+            id: pid,
+            name: userData['name'] ?? 'Unknown Patient',
+            lastRiskScore: latestAssessment != null
+                ? (latestAssessment['riskScore'] as num).toDouble()
+                : 0.0,
+            lastAssessmentDate: latestAssessment != null
+                ? (latestAssessment['timestamp'] as Timestamp)
+                      .toDate()
+                      .toString()
+                      .substring(0, 10)
+                : 'No scans',
+            profilePictureUrl: userData['profileImageUrl'] ?? '',
+          ),
+        );
       }
 
       return Right(summaries);
@@ -59,30 +71,36 @@ class DoctorPatientsRepositoryImpl implements DoctorPatientsRepository {
   }
 
   @override
-  Future<Either<Failure, PatientInfoEntity>> getPatientInfo(String patientId) async {
+  Future<Either<Failure, PatientInfoEntity>> getPatientInfo(
+    String patientId,
+  ) async {
     try {
       final doc = await _firestore.collection('users').doc(patientId).get();
       if (!doc.exists) return const Left(ServerFailure('Patient not found'));
-      
+
       final data = doc.data()!;
-      return Right(PatientInfoEntity(
-        id: patientId,
-        fullName: data['name'] ?? 'Unknown',
-        firstName: (data['name'] as String? ?? '').split(' ').first,
-        lastName: (data['name'] as String? ?? '').split(' ').last,
-        email: data['email'] ?? '',
-        phoneNumber: data['phone'] ?? 'Not provided',
-        sex: data['sex'] ?? 'Unknown',
-        dateOfBirthString: data['dob'] ?? 'Not provided',
-        profilePictureUrl: data['profileImageUrl'] ?? '',
-      ));
+      return Right(
+        PatientInfoEntity(
+          id: patientId,
+          fullName: data['name'] ?? 'Unknown',
+          firstName: (data['name'] as String? ?? '').split(' ').first,
+          lastName: (data['name'] as String? ?? '').split(' ').last,
+          email: data['email'] ?? '',
+          phoneNumber: data['phone'] ?? 'Not provided',
+          sex: data['sex'] ?? 'Unknown',
+          dateOfBirthString: data['dob'] ?? 'Not provided',
+          profilePictureUrl: data['profileImageUrl'] ?? '',
+        ),
+      );
     } catch (e) {
       return Left(ServerFailure(e.toString()));
     }
   }
 
   @override
-  Future<Either<Failure, List<HistoryEntryEntity>>> getPatientHistory(String patientId) async {
+  Future<Either<Failure, List<HistoryEntryEntity>>> getPatientHistory(
+    String patientId,
+  ) async {
     try {
       final snapshot = await _firestore
           .collection('assessments')
@@ -92,14 +110,19 @@ class DoctorPatientsRepositoryImpl implements DoctorPatientsRepository {
 
       final entries = snapshot.docs.map((doc) {
         final data = doc.data();
-        final double scoreValue = (data['riskScore'] as num?)?.toDouble() ?? 0.0;
-        
+        final double scoreValue =
+            (data['riskScore'] as num?)?.toDouble() ?? 0.0;
+
         return HistoryEntryEntity(
           date: (data['timestamp'] as Timestamp?)?.toDate() ?? DateTime.now(),
           score: scoreValue,
           status: scoreValue > 50 ? 'High Risk' : 'Healthy',
           recommendations: List<String>.from(data['recommendations'] ?? []),
-          inputs: data['inputs'] != null ? AssessmentInputModel.fromMap(data['inputs'] as Map<String, dynamic>) : null,
+          inputs: data['inputs'] != null
+              ? AssessmentInputModel.fromMap(
+                  data['inputs'] as Map<String, dynamic>,
+                )
+              : null,
         );
       }).toList();
 
@@ -110,7 +133,8 @@ class DoctorPatientsRepositoryImpl implements DoctorPatientsRepository {
   }
 
   @override
-  Future<Either<Failure, List<Map<String, dynamic>>>> getPendingAssignments() async {
+  Future<Either<Failure, List<Map<String, dynamic>>>>
+  getPendingAssignments() async {
     try {
       final user = _auth.currentUser;
       if (user == null) return const Left(AuthFailure('Not logged in'));
@@ -121,15 +145,36 @@ class DoctorPatientsRepositoryImpl implements DoctorPatientsRepository {
           .where('status', isEqualTo: 'pending')
           .get();
 
-      final requests = snapshot.docs.map((doc) {
+      final requests = <Map<String, dynamic>>[];
+      for (final doc in snapshot.docs) {
         final data = doc.data();
-        return {
+        final patientId = data['patientId'] as String?;
+        String patientProfileImageUrl = 'images/patient_placeholder.png';
+
+        if (patientId != null && patientId.isNotEmpty) {
+          final patientDoc = await _firestore
+              .collection('users')
+              .doc(patientId)
+              .get();
+          if (patientDoc.exists) {
+            patientProfileImageUrl =
+                patientDoc.data()?['profileImageUrl'] ?? patientProfileImageUrl;
+          }
+        }
+
+        requests.add({
           'id': doc.id,
-          'patientId': data['patientId'],
+          'patientId': patientId,
           'patientName': data['patientName'] ?? 'Anonymous',
-          'date': (data['requestedAt'] as Timestamp?)?.toDate().toString().substring(0, 16) ?? 'Just now',
-        };
-      }).toList();
+          'date':
+              (data['requestedAt'] as Timestamp?)
+                  ?.toDate()
+                  .toString()
+                  .substring(0, 16) ??
+              'Just now',
+          'patientProfileImageUrl': patientProfileImageUrl,
+        });
+      }
 
       return Right(requests);
     } catch (e) {
@@ -138,16 +183,19 @@ class DoctorPatientsRepositoryImpl implements DoctorPatientsRepository {
   }
 
   @override
-  Future<Either<Failure, Unit>> acceptAssignment(String assignmentId, String patientId) async {
+  Future<Either<Failure, Unit>> acceptAssignment(
+    String assignmentId,
+    String patientId,
+  ) async {
     try {
       final user = _auth.currentUser;
       if (user == null) return const Left(AuthFailure('Not logged in'));
 
       final batch = _firestore.batch();
 
-
-      batch.update(_firestore.collection('assignments').doc(assignmentId), {'status': 'accepted'});
-
+      batch.update(_firestore.collection('assignments').doc(assignmentId), {
+        'status': 'accepted',
+      });
 
       final careTeamId = "${patientId}_${user.uid}";
       batch.set(_firestore.collection('care_teams').doc(careTeamId), {
@@ -167,7 +215,9 @@ class DoctorPatientsRepositoryImpl implements DoctorPatientsRepository {
   @override
   Future<Either<Failure, Unit>> rejectAssignment(String assignmentId) async {
     try {
-      await _firestore.collection('assignments').doc(assignmentId).update({'status': 'rejected'});
+      await _firestore.collection('assignments').doc(assignmentId).update({
+        'status': 'rejected',
+      });
       return const Right(unit);
     } catch (e) {
       return Left(ServerFailure(e.toString()));

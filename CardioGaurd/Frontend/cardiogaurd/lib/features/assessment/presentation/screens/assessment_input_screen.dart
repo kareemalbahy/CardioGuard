@@ -1,7 +1,8 @@
-import 'package:cardiogaurd/core/constants/app_strings.dart';
 import 'package:cardiogaurd/features/assessment/presentation/widgets/calculate_button.dart';
-import 'package:cardiogaurd/features/patient/domain/entities/user_profile_entity.dart';
+import 'package:cardiogaurd/features/auth/domain/entities/app_user.dart';
+import 'package:cardiogaurd/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:cardiogaurd/core/theme/app_colors.dart';
 import 'package:cardiogaurd/features/assessment/presentation/widgets/slider_card.dart';
 import 'package:cardiogaurd/features/assessment/presentation/widgets/toggle_card.dart';
@@ -14,22 +15,74 @@ class AssessmentInputScreen extends StatefulWidget {
 }
 
 class _AssessmentInputScreenState extends State<AssessmentInputScreen> {
-  final userProfile = UserProfileEntity(
-    name: fullName,
-    email: email,
-    phone: phoneNumber,
-    gender: sex,
-    age: 24,
-    profileImageUrl: patientImageURL,
-    lastRiskScore: 68.0,
-    lastAssessmentDate: "Oct 12, 2023",
-  );
+  late double _age;
+  late int _sex;
 
-  // 13 Feature Variables initialized to standard clinical baselines (Age & Sex from Profile)
-  late double _age = userProfile.age.toDouble();
-  late int _sex = userProfile.gender.toLowerCase() == 'male'
-      ? 1
-      : 0; // 0: Female, 1: Male
+  @override
+  void initState() {
+    super.initState();
+    final user = context.read<AuthCubit>().state.user;
+    _age = _calculateInitialAge(user);
+    _sex = _calculateInitialSex(user);
+  }
+
+  double _calculateInitialAge(AppUser? user) {
+    final parsedDob = _parseDob(user?.dob);
+    if (parsedDob != null) {
+      final today = DateTime.now();
+      var age = today.year - parsedDob.year;
+      if (today.month < parsedDob.month ||
+          (today.month == parsedDob.month && today.day < parsedDob.day)) {
+        age--;
+      }
+      return age.clamp(0, 120).toDouble();
+    }
+    return 24;
+  }
+
+  int _calculateInitialSex(AppUser? user) {
+    final gender = user?.gender?.toLowerCase() ?? '';
+    return gender == 'male' ? 1 : 0;
+  }
+
+  DateTime? _parseDob(String? dob) {
+    if (dob == null || dob.isEmpty) return null;
+
+    final parsed = DateTime.tryParse(dob);
+    if (parsed != null) return parsed;
+
+    final separators = ['/', '-', '.'];
+    for (final sep in separators) {
+      if (!dob.contains(sep)) continue;
+
+      final parts = dob.split(sep).map((p) => p.trim()).toList();
+      if (parts.length != 3) continue;
+
+      try {
+        if (parts[0].length == 4) {
+          return DateTime(
+            int.parse(parts[0]),
+            int.parse(parts[1]),
+            int.parse(parts[2]),
+          );
+        }
+
+        final year = int.parse(parts[2]);
+        final first = int.parse(parts[0]);
+        final second = int.parse(parts[1]);
+
+        if (first > 12) {
+          return DateTime(year, second, first);
+        }
+        return DateTime(year, first, second);
+      } catch (_) {
+        continue;
+      }
+    }
+
+    return null;
+  }
+
   int _cp =
       0; // 0: Typical Angina, 1: Atypical Angina, 2: Non-anginal, 3: Asymptomatic
   double _trestbps = 120; // Resting Blood Pressure
